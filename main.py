@@ -1,22 +1,23 @@
 import os
-from docx import Document
-from docxcompose.composer import Composer
+import subprocess
 
-def merge_docx(files, output_file):
-    if not files:
-        raise ValueError("No files to merge.")
 
-    # Open the first document
-    master = Document(files[0])
-    composer = Composer(master)
+def merge_docx_files_with_pandoc(docx_files, output_file):
+    # Join the list of docx files into a single string separated by spaces
+    input_files_str = ' '.join([f'"{file}"' for file in docx_files])
 
-    # Append the rest of the documents
-    for file in files[1:]:
-        doc = Document(file)
-        composer.append(doc)
+    # Create the pandoc command
+    pandoc_command = f'pandoc {input_files_str} -o "{output_file}"'
 
-    # Save the merged document
-    composer.save(output_file)
+    # Run the pandoc command
+    result = subprocess.run(pandoc_command, shell=True, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("An error occurred during merging with pandoc:")
+        print(result.stderr)
+    else:
+        print(f"Merged document created at {output_file}")
+
 
 # Directory containing the .docx files
 directory = os.path.abspath("docxFiles")
@@ -28,14 +29,12 @@ if not os.path.exists(directory):
 # List of .docx files to merge
 docx_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.docx')]
 
-# Check if there are .docx files to merge
+# Check if there are files to merge
 if not docx_files:
-    raise FileNotFoundError("No .docx files found in the directory.")
+    raise ValueError("No .docx files found in the directory.")
 
 # Output file
 output_file = os.path.join(directory, "SGICM_LogisticaQR.docx")
 
 # Merge the .docx files
-merge_docx(docx_files, output_file)
-
-print(f"All files merged into {output_file}")
+merge_docx_files_with_pandoc(docx_files, output_file)
